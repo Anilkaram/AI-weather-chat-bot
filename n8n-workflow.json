@@ -1,0 +1,218 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "weather-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -496,
+        96
+      ],
+      "id": "7a720b7a-5c51-4b1a-8190-98ef6da0a89e",
+      "name": "Webhook",
+      "webhookId": "89657898-69ab-41e9-97cf-0e5a2e3eb2b6"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash-lite-preview-06-17",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash-lite-preview-06-17"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a JSON extractor for weather queries.  \nWhen given a user’s question about weather, output only a JSON object with exactly these keys:\n  • city (string) – the city name  \n  • weather (string, optional) – the phrase “weather” or “forecast” if present  \n  • time (string, optional) – words like “today”, “tomorrow”, \"latest\", \"now\" or other time expressions return time format with date \n\nDo not output any extra text, markdown, or explanation—only the JSON.\n\nYour output must be a JSON object with those properties:\n{\n  \"city\" : this is recommended \n  \"weather\" : this is optional\n  \"time\" : this is optional\n}\n\nexample: \nuser input: \"can you get todays mumbai weather report\"\nexplanation: todays weather report means the exact report of now (ex: today means the date is 20-08-2025, they are expecting the weather of the date)\nOutput:\n{\n  \"city\" : \"mumbai\",\n  \"weather\" : \"weather report\"\n  \"time\" : \"20-08-2025\"\n}\n\nexample: \nuser input: \"what is get the latest weather report of mumbai\"\nOutput:\n{\n  \"city\" : \"mumbai\",\n  \"weather\" : \"weather report\"\n  \"time\" : \"20-08-2025 17:15 PM\"\n}\n",
+              "role": "model"
+            },
+            {
+              "content": "= {{ $json.body.message }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        96
+      ],
+      "id": "5f641c0d-4383-4637-945f-e6b885f13b13",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "U3RhPuvs19a3EDKO",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.body.formatted_response }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        624,
+        96
+      ],
+      "id": "4201446d-7d82-4fd1-866a-8dc41b12f16f",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json.content.parts[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        96
+      ],
+      "id": "d38a89fb-0758-425e-9e13-ae2db9882275",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://mcp-server:3001/tools/execute",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "parameters.city",
+              "value": "={{ $json.city }}"
+            },
+            {
+              "name": "=weather",
+              "value": "={{ $json.weather }}"
+            },
+            {
+              "name": "=parameters.time",
+              "value": "={{ $json.time }}"
+            },
+            {
+              "name": "tool_name",
+              "value": "get_weather"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        96
+      ],
+      "id": "538776b1-0636-48a6-8554-b7fd8a4e8e7e",
+      "name": "Call MCP Weather"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6953a685-e10c-4e95-927f-b5ba40584b34",
+              "name": "body.formatted_response",
+              "value": "={{ $json.body.formatted_response }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        96
+      ],
+      "id": "a0d820cc-76f3-4c92-a514-4faee2c96386",
+      "name": "Extract Reply"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Call MCP Weather",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call MCP Weather": {
+      "main": [
+        [
+          {
+            "node": "Extract Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Reply": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5d53f78905e45a908ccbb161a53e1f77ff9074fa9702f776a69a34fd018b3716"
+  }
+}
