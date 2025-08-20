@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Bot Health Check</title>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, rgba(58, 79, 145, 0.85) 0%, rgba(76, 49, 121, 0.85) 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #3a4f91;
+            margin-top: 0;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border-left: 5px solid #3a4f91;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            padding: 8px 0;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+        }
+        .value {
+            font-family: monospace;
+        }
+        pre {
+            background: #f4f5f7;
+            padding: 15px;
+            border-radius: 5px;
+            overflow: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .btn {
+            background: #3a4f91;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background: #4c3179;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weather Bot Health Check</h1>
+        
+        <div class="status-card">
+            <h2>System Status</h2>
+            <div id="loading">Loading...</div>
+            <div id="status-content" style="display:none">
+                <div class="data-row">
+                    <span class="label">Server Status:</span>
+                    <span class="value" id="server-status">-</span>
+                </div>
+                <div class="data-row">
+                    <span class="label">Server Time:</span>
+                    <span class="value" id="server-time">-</span>
+                </div>
+                <div class="data-row">
+                    <span class="label">Timezone:</span>
+                    <span class="value" id="timezone">-</span>
+                </div>
+                <div class="data-row">
+                    <span class="label">UTC Offset:</span>
+                    <span class="value" id="offset">-</span>
+                </div>
+                <div class="data-row">
+                    <span class="label">Browser Time (Local):</span>
+                    <span class="value" id="browser-time">-</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <h2>API Test</h2>
+            <p>Test a weather request to verify the API is working correctly:</p>
+            <div>
+                <input type="text" id="city-input" placeholder="Enter city name" style="padding: 10px; width: 70%; border-radius: 5px; border: 1px solid #ddd;">
+                <button class="btn" onclick="testWeather()">Test</button>
+            </div>
+            <div id="api-result" style="margin-top: 15px; display: none;">
+                <h3>Result:</h3>
+                <pre id="result-json"></pre>
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <h2>Help & Troubleshooting</h2>
+            <p>If you're experiencing timezone issues:</p>
+            <ol>
+                <li>Check that the <code>TIMEZONE</code> variable in your <code>.env</code> file is set correctly</li>
+                <li>Restart your Docker containers after any configuration change</li>
+                <li>Verify that your browser's local time is correct</li>
+            </ol>
+            <p>Common timezone configurations:</p>
+            <ul>
+                <li><code>Asia/Kolkata</code> - India</li>
+                <li><code>America/New_York</code> - US Eastern</li>
+                <li><code>America/Los_Angeles</code> - US Pacific</li>
+                <li><code>Europe/London</code> - UK</li>
+                <li><code>Asia/Tokyo</code> - Japan</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Update browser time
+        function updateBrowserTime() {
+            const now = new Date();
+            document.getElementById('browser-time').textContent = 
+                now.toLocaleString() + 
+                " (" + 
+                Intl.DateTimeFormat().resolvedOptions().timeZone + 
+                ")";
+        }
+        
+        // Fetch server health
+        async function checkServerHealth() {
+            try {
+                const response = await fetch('http://localhost:3001/health');
+                const data = await response.json();
+                
+                document.getElementById('server-status').textContent = 'Healthy';
+                document.getElementById('server-status').className = 'success';
+                document.getElementById('server-time').textContent = data.timezone.formatted_time;
+                document.getElementById('timezone').textContent = data.timezone.name;
+                document.getElementById('offset').textContent = data.timezone.offset;
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('status-content').style.display = 'block';
+            } catch (error) {
+                document.getElementById('loading').innerHTML = 
+                    '<span class="error">Error connecting to server. Make sure the server is running.</span>';
+                console.error('Error fetching server health:', error);
+            }
+        }
+        
+        // Test weather API
+        async function testWeather() {
+            const cityName = document.getElementById('city-input').value.trim();
+            if (!cityName) {
+                alert('Please enter a city name');
+                return;
+            }
+            
+            document.getElementById('api-result').style.display = 'block';
+            document.getElementById('result-json').textContent = 'Loading...';
+            
+            try {
+                const response = await fetch('http://localhost:3001/tools/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        tool_name: 'get_weather',
+                        parameters: {
+                            city: cityName
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('result-json').textContent = 
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result-json').textContent = 
+                    'Error: ' + error.message;
+                document.getElementById('result-json').className = 'error';
+            }
+        }
+        
+        // Initialize
+        window.onload = function() {
+            updateBrowserTime();
+            setInterval(updateBrowserTime, 1000);
+            checkServerHealth();
+        };
+    </script>
+</body>
+</html>

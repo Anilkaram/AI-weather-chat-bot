@@ -33,6 +33,9 @@ services:
     environment:
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
       - TIMEZONE=${TIMEZONE}
+      - TZ=${TIMEZONE}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     networks:
       - weather-network
 

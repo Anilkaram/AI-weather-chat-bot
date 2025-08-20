@@ -2,14 +2,21 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Set timezone
+ENV TZ=Asia/Kolkata
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # Install dependencies
 RUN pip install fastapi uvicorn requests python-multipart pytz
 
-# Copy source code
-COPY weather_server_http.py .
+# Copy source files
+COPY weather_server_http.py server.py timezone_debug.py TIMEZONE_HELP.md ./
 
 # Expose port
 EXPOSE 3001
 
-# Run the server
-CMD ["python", "weather_server_http.py"]
+# Make entry script executable
+RUN chmod +x server.py
+
+# Run the server with the entry script for better error handling
+CMD ["python", "server.py"]

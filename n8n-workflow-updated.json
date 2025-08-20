@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1152,
-        144
+        -1120,
+        32
       ],
-      "id": "e8ea5226-6905-4a64-a9bb-4e94253cacac",
+      "id": "4c498e8a-1360-4cd2-bc7d-c87398b6fdcf",
       "name": "Webhook",
       "webhookId": "89657898-69ab-41e9-97cf-0e5a2e3eb2b6"
     },
@@ -28,7 +28,7 @@
         "messages": {
           "values": [
             {
-              "content": "=You are a JSON extractor for weather queries.  \nWhen given a user’s question about weather, output only a JSON object with exactly these keys:\n  • city (string) – the city name  \n  • weather (string, optional) – the phrase “weather” \n  • time (string, optional) – words like “today”, “tomorrow”, \"latest\", \"now\" or other time expressions return time format with date \n  • greetings (string, optional) - greeting the user back if they greet.\n  • forecast (string. optional) - words like forecast and future phrases like future tenses\nDo not output any extra text, markdown, or explanation—only the JSON.\n\nYour output must be a JSON object with those properties:\n{\n  \"city\" : this is recommended but optional when object greeting is used \n  \"weather\" : this is optional\n  \"time\" : this is optional \n  \"greeting\" : this is optional\n  \"forecasts\" : this is optional\n}\n\nexample: \nuser input: \"can you get todays mumbai weather report\"\nexplanation: todays weather report means the exact report of now (ex: today means the date is 20-08-2025, they are expecting the weather of the date)\nOutput:\n{\n  \"city\" : \"mumbai\",\n  \"weather\" : \"weather report\"\n  \"time\" : \"20-08-2025\"\n}\n\nexample: \nuser input: \"what is get the latest weather report of mumbai\"\nOutput:\n{\n  \"city\" : \"mumbai\",\n  \"weather\" : \"weather report\"\n  \"time\" : \"20-08-2025 17:15 PM\"\n}\n\nexample: \nuser input: \"hi\"\nouput:\n{\n  \"greeting\": \"hi, can i help you with weather report\",\n}\n\nexample: \nuser input: \"will it rain now in hyderabad\"\nOutput:\n{\n  \"city\" : \"hyderabad\",\n  \"weather\" : \"forecast\"\n  \"time\" : \"now\"\n}\n\nexample: \nuser input: \"will it rain tomorrow in hyderabad\"\nOutput:\n{\n  \"city\" : \"hyderabad\",\n  \"forecast\" : \"forecast\"\n  \"time\" : \"tomorrow\"\n}\n",
+              "content": "You are a JSON extractor for weather queries.  \nWhen given a user's question about weather, output only a JSON object with exactly these keys:\n  • city (string) – the city name  \n  • weather (string, optional) – the phrase \"weather\" for current weather\n  • time (string, optional) – words like \"today\", \"tomorrow\", \"latest\", \"now\" or other time expressions return time format with date \n  • greeting (string, optional) - greeting the user back if they greet.\n  • forecast (boolean, optional) - Set to true when user asks for weather prediction, forecast, or future weather conditions\n\nDo not output any extra text, markdown, or explanation—only the JSON.\n\nYour output must be a JSON object with those properties:\n{\n  \"city\" : this is recommended but optional when object greeting is used \n  \"weather\" : this is optional\n  \"time\" : this is optional \n  \"greeting\" : this is optional\n  \"forecast\" : this is optional, must be true when user asks for forecast or future weather\n}\n\nREALLY IMPORTANT: When users ask about future weather, rain forecasts, or predictions, you MUST set forecast to true!\n\nexample: \nuser input: \"can you get todays mumbai weather report\"\nexplanation: todays weather report means the exact report of now \nOutput:\n{\n  \"city\" : \"mumbai\",\n  \"weather\" : \"weather report\",\n  \"time\" : \"today\"\n}\n\nexample: \nuser input: \"what is the latest weather report of mumbai\"\nOutput:\n{\n  \"city\" : \"mumbai\",\n  \"weather\" : \"weather report\",\n  \"time\" : \"now\"\n}\n\nexample: \nuser input: \"hi\"\nouput:\n{\n  \"greeting\": \"hi, can i help you with weather report\"\n}\n\nexample: \nuser input: \"will it rain now in hyderabad\"\nOutput:\n{\n  \"city\" : \"hyderabad\",\n  \"forecast\" : true,\n  \"time\" : \"now\"\n}\n\nexample: \nuser input: \"what's the weather forecast for delhi tomorrow?\"\nOutput:\n{\n  \"city\" : \"delhi\",\n  \"forecast\" : true,\n  \"time\" : \"tomorrow\"\n}\n\nexample:\nuser input: \"what will the weather be like in mumbai for the next 5 days?\"\nOutput:\n{\n  \"city\": \"mumbai\",\n  \"forecast\": true\n}",
               "role": "model"
             },
             {
@@ -42,10 +42,10 @@
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1,
       "position": [
-        -960,
-        144
+        -928,
+        32
       ],
-      "id": "783de8d4-7620-4387-b341-87c7ada37777",
+      "id": "349e2ab4-fa2f-4434-8c59-71737213cdd5",
       "name": "Message a model",
       "credentials": {
         "googlePalmApi": {
@@ -63,10 +63,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        176,
-        48
+        208,
+        -64
       ],
-      "id": "cde18b00-acb1-496d-bbd2-7acc5090426a",
+      "id": "15d77a0c-d1e0-4524-a26d-7228ff6cb427",
       "name": "Respond to Webhook"
     },
     {
@@ -78,10 +78,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -640,
-        144
+        -608,
+        32
       ],
-      "id": "ee6c16f9-e5d8-4b9c-bdff-74a1dc0466f6",
+      "id": "76cf3087-5299-4e20-bec6-66ed2a31174c",
       "name": "Edit Fields"
     },
     {
@@ -129,10 +129,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -192,
-        48
+        -160,
+        -64
       ],
-      "id": "d26dd5f1-247f-4b25-becc-266e425c7339",
+      "id": "8cffcb22-21e5-47f5-9e52-ea7dc7b03b11",
       "name": "Call MCP Weather"
     },
     {
@@ -154,10 +154,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        0,
-        48
+        32,
+        -64
       ],
-      "id": "f3633597-cfbf-4f7f-a1ad-7135754688a6",
+      "id": "b6228971-b7e4-442a-bb4a-b02f80349bb0",
       "name": "Extract Reply"
     },
     {
@@ -174,7 +174,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $json.city }}, {{ $json.forecast }}",
+                    "leftValue": "={{ $json.city }}",
                     "rightValue": "",
                     "operator": {
                       "type": "string",
@@ -217,10 +217,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        -448,
-        144
+        -416,
+        32
       ],
-      "id": "8e5bee62-41a4-4f98-a4df-6ad4584ed5db",
+      "id": "f52037bf-e406-4cdc-9344-875543c36048",
       "name": "Switch"
     },
     {
@@ -232,10 +232,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -176,
-        272
+        -144,
+        160
       ],
-      "id": "6dd929f0-8893-4035-b742-f320e5f681f4",
+      "id": "79d38dcf-11f3-4731-b1f3-cb443108988c",
       "name": "Respond to Webhook1"
     }
   ],
