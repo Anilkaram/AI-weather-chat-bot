@@ -95,40 +95,36 @@
 - Modern UI with glassmorphism effects and a weather-themed background
 - Backend Processing
 **The Python HTTP server (weather_server_http.py) handles:**
-Natural language processing to extract city names
-API calls to external weather services
-Data formatting and presentation logic
-Error handling for invalid queries or API failures
-Containerization
-The application uses Docker for deployment:
-
-Ensures consistency across different environments
-Simplifies dependency management
-Enables easy scaling and orchestration
-Isolates services for better security and resource management
-Deployment Architecture
-The application can be deployed using:
-
-Local Development:
-
-Run services via Docker Compose
-Access frontend through local file system or simple HTTP server
-Backend services on localhost ports
-Cloud Deployment:
-
-Container orchestration (potentially Kubernetes)
-Load balancing for increased traffic
-Cloud hosting for improved availability
-CDN for static frontend assets
-Security Considerations
-HTTPS for secure client-server communication
-Input validation to prevent injection attacks
-API key management for external weather service
-Rate limiting to prevent abuse
-Error handling that doesn't expose sensitive information
-Scalability Features
-Stateless backend allows horizontal scaling
-Containerization supports dynamic scaling
-Caching of common weather requests can reduce API calls
-Low resource requirements for the frontend
+- Natural language processing to extract city names
+- API calls to external weather services
+- Data formatting and presentation logic
+- Error handling for invalid queries or API failures
+- Containerization
+**The application uses Docker for deployment:**
+- Ensures consistency across different environments
+- Simplifies dependency management
+- Enables easy scaling and orchestration
+- Isolates services for better security and resource management
+**Deployment Architecture**
+**The application can be deployed using:**
+**1. Local Development:**
+- Run services via Docker Compose
+- Access frontend through local file system or simple HTTP server
+- Backend services on localhost ports
+**2. Cloud Deployment:**
+- Container orchestration (potentially Kubernetes)
+- Load balancing for increased traffic
+- Cloud hosting for improved availability
+- CDN for static frontend assets
+**Security Considerations**
+- HTTPS for secure client-server communication
+- Input validation to prevent injection attacks
+- API key management for external weather service
+- Rate limiting to prevent abuse
+- Error handling that doesn't expose sensitive information
+- Scalability Features
+- Stateless backend allows horizontal scaling
+- Containerization supports dynamic scaling
+- Caching of common weather requests can reduce API calls
+- Low resource requirements for the frontend
 This architecture provides a flexible, modern approach to delivering weather information through a conversational interface, with clear separation of concerns between frontend presentation, backend processing, and external data integration.
