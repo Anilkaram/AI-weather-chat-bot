@@ -10,9 +10,9 @@
 # Containers 
 <img width="1420" height="82" alt="image" src="https://github.com/user-attachments/assets/792028e7-acb2-4029-831c-557320ec8e9f" />
 
-**Architecture Components**
+# Architecture Components
 
-**1. Frontend (Client-Side)**
+# 1. Frontend (Client-Side)
 
 **Technologies:**
 - HTML5, CSS3, JavaScript (Vanilla)
@@ -33,7 +33,7 @@
 - Receives and displays formatted weather data responses
 - Provides visual feedback during request processing
 
-**2. Backend (Server-Side)**
+# **2. Backend (Server-Side)**
 
 **Technologies:**
 - Python HTTP server (weather_server_http.py)
