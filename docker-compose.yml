@@ -32,6 +32,7 @@ services:
       - "3001:3001"
     environment:
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+      - TIMEZONE=${TIMEZONE}
     networks:
       - weather-network
 

@@ -2,7 +2,8 @@
 import os
 import asyncio
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
+import pytz
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -22,6 +23,9 @@ app.add_middleware(
 # Get OpenWeatherMap API key
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "your_api_key_here")
 
+# Configure timezone from environment variable or default to IST
+LOCAL_TIMEZONE = pytz.timezone(os.getenv("TIMEZONE", "Asia/Kolkata"))
+
 class WeatherRequest(BaseModel):
     city: str
 
@@ -31,7 +35,7 @@ class ToolRequest(BaseModel):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    return {"status": "healthy", "timestamp": datetime.now(LOCAL_TIMEZONE).isoformat()}
 
 @app.get("/tools")
 async def list_tools():
@@ -105,7 +109,7 @@ async def get_current_weather(city: str):
             "humidity": f"{data['main']['humidity']}%",
             "pressure": f"{data['main']['pressure']} hPa",
             "wind_speed": f"{data['wind']['speed']} m/s",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(LOCAL_TIMEZONE).isoformat()
         }
         
         return {
@@ -119,7 +123,7 @@ async def get_current_weather(city: str):
 🌪️ Pressure: {weather_info['pressure']}
 💨 Wind Speed: {weather_info['wind_speed']}
 
-Data updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"""
+Data updated: {datetime.now(LOCAL_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S')}"""
         }
         
     except requests.RequestException as e:
@@ -148,12 +152,16 @@ async def get_weather_forecast(city: str):
         # Group by date and take one forecast per day
         daily_forecasts = {}
         for item in data['list'][:5]:  # First 5 entries
-            date = datetime.fromtimestamp(item['dt']).strftime('%Y-%m-%d')
+            # Convert timestamp to local timezone
+            dt = datetime.fromtimestamp(item['dt'], tz=timezone.utc).astimezone(LOCAL_TIMEZONE)
+            date = dt.strftime('%Y-%m-%d')
             if date not in daily_forecasts:
                 daily_forecasts[date] = item
         
         for date, forecast in daily_forecasts.items():
-            day_name = datetime.fromtimestamp(forecast['dt']).strftime('%A')
+            # Convert timestamp to local timezone
+            dt = datetime.fromtimestamp(forecast['dt'], tz=timezone.utc).astimezone(LOCAL_TIMEZONE)
+            day_name = dt.strftime('%A')
             temp = forecast['main']['temp']
             desc = forecast['weather'][0]['description'].title()
             forecast_text += f"🗓️ {day_name} ({date}): {temp}°C, {desc}\n"

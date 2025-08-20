@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install dependencies
-RUN pip install fastapi uvicorn requests python-multipart
+RUN pip install fastapi uvicorn requests python-multipart pytz
 
 # Copy source code
 COPY weather_server_http.py .
