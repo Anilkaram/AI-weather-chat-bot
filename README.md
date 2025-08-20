@@ -46,7 +46,7 @@
 - Formats weather information into human-readable responses
 - Returns processed data to the frontend
 
-**3. Integration Layer (n8n)**
+# **3. Integration Layer (n8n)**
 
 **Component:**
 - n8n workflow automation platform
@@ -57,7 +57,7 @@
 - Routes requests from frontend to the Python weather server
 - May perform additional data transformation or validation
 
-**4. External Weather API**
+# **4. External Weather API**
 
 **Integration:**
 - Third-party weather data provider (not specified in code)
@@ -69,7 +69,7 @@
 - Forecast data
 - Weather alerts and warnings
 
-**5. Docker Containerization**
+# **5. Docker Containerization**
 
 **Components:**
 - Dockerfile.mcp - Defines the container for the Model Context Protocol server
