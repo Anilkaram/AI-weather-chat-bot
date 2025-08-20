@@ -107,11 +107,14 @@
 - Isolates services for better security and resource management
 
 **Deployment Architecture**
+
 **The application can be deployed using:**
+
 **1. Local Development:**
 - Run services via Docker Compose
 - Access frontend through local file system or simple HTTP server
 - Backend services on localhost ports
+
 **2. Cloud Deployment:**
 - Container orchestration (potentially Kubernetes)
 - Load balancing for increased traffic
