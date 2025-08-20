@@ -105,6 +105,7 @@
 - Simplifies dependency management
 - Enables easy scaling and orchestration
 - Isolates services for better security and resource management
+
 **Deployment Architecture**
 **The application can be deployed using:**
 **1. Local Development:**
