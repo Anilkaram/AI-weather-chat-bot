@@ -404,8 +404,8 @@
         const statusElement = document.getElementById('status');
         const statusDot = document.getElementById('status-dot');
         
-        // Use our weather server directly
-        const WEATHER_API_URL = 'http://localhost:3001/webhook-test/weather-chat';
+        // n8n webhook URL - using n8n for LLM processing
+        const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook-test/weather-chat';
         
         let isProcessing = false;
 
@@ -481,12 +481,20 @@
             updateStatus('Processing...', 'connected');
 
             try {
-                // Check if the query specifically mentions "today" or "now" or "current"
-                // If so, add a hint to get current weather instead of forecast
+                // Check if the query specifically mentions time-related keywords
+                // If it mentions today-related terms, prioritize current weather
                 const todayKeywords = ['today', 'now', 'current', 'currently', 'right now', 'at the moment'];
-                const isTodayQuery = todayKeywords.some(keyword => message.toLowerCase().includes(keyword));
+                // If it specifically mentions forecast terms, don't override
+                const forecastKeywords = ['forecast', 'week', 'days', 'tomorrow', 'future', 'next', 'upcoming', '5-day', '5 day'];
                 
-                const response = await fetch(WEATHER_API_URL, {
+                // Check if query contains weather but not forecast terms
+                const isGeneralWeatherQuery = message.toLowerCase().includes('weather') && 
+                    !forecastKeywords.some(keyword => message.toLowerCase().includes(keyword));
+                
+                const isTodayQuery = todayKeywords.some(keyword => message.toLowerCase().includes(keyword)) || 
+                    isGeneralWeatherQuery;
+                
+                const response = await fetch(N8N_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

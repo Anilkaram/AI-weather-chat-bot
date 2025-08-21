@@ -202,9 +202,22 @@ async def webhook_handler(request: dict):
             return "I couldn't determine which city you're asking about. Please specify a city name."
         
         # Check if the query specifically mentions "today" or similar terms
-        if prefer_current_weather or "today" in message or "now" in message or "current" in message:
+        today_keywords = ["today", "now", "current", "currently", "right now", "at the moment"]
+        forecast_keywords = ["forecast", "week", "days", "tomorrow", "future", "next", "upcoming", "5-day", "5 day"]
+        
+        # If user explicitly asks for current weather or uses today-related keywords
+        if prefer_current_weather or any(keyword in message for keyword in today_keywords):
             result = await get_current_weather(city)
             return result["formatted_response"]
+        # If user explicitly asks for forecast
+        elif any(keyword in message for keyword in forecast_keywords):
+            result = await get_weather_forecast(city)
+            return result["formatted_response"]
+        # For general weather queries like "what's the weather in X" without specific timeframe
+        elif "weather" in message and not any(keyword in message for keyword in forecast_keywords):
+            result = await get_current_weather(city)
+            return result["formatted_response"]
+        # Default to forecast for other queries
         else:
             result = await get_weather_forecast(city)
             return result["formatted_response"]
