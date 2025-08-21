@@ -15,7 +15,7 @@ ENV TIMEZONE=Etc/UTC
 RUN pip install --no-cache-dir fastapi uvicorn requests python-multipart pytz python-dotenv
 
 # Copy source files
-COPY weather_server_http.py .env ./
+COPY weather_server_http.py ./
 
 # Expose port
 EXPOSE 3001
