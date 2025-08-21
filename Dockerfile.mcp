@@ -15,13 +15,10 @@ ENV TIMEZONE=Etc/UTC
 RUN pip install --no-cache-dir fastapi uvicorn requests python-multipart pytz
 
 # Copy source files
-COPY weather_server_http.py server.py timezone_debug.py TIMEZONE_HELP.md ./
+COPY weather_server_http.py ./
 
 # Expose port
 EXPOSE 3001
 
-# Make entry script executable
-RUN chmod +x server.py
-
-# Run the server with the entry script for better error handling
-CMD ["python", "server.py"]
+# Run the server
+CMD ["python", "-m", "uvicorn", "weather_server_http:app", "--host", "0.0.0.0", "--port", "3001"]

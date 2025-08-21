@@ -76,6 +76,11 @@ class WeatherRequest(BaseModel):
 class ToolRequest(BaseModel):
     tool_name: str
     parameters: Dict[str, Any]
+    
+class WebhookRequest(BaseModel):
+    message: str
+    timestamp: str
+    preferCurrentWeather: bool = False
 
 @app.get("/debug")
 async def debug_info():
@@ -178,6 +183,34 @@ async def list_tools():
             }
         ]
     }
+
+@app.post("/webhook-test/weather-chat")
+async def webhook_handler(request: dict):
+    """Handle incoming webhook requests from the chat UI"""
+    try:
+        message = request.get("message", "").lower()
+        prefer_current_weather = request.get("preferCurrentWeather", False)
+        
+        # Extract city from the message
+        city = None
+        for possible_city in ["hyderabad", "chennai", "mumbai", "delhi", "bangalore", "london", "new york", "paris", "tokyo"]:
+            if possible_city in message:
+                city = possible_city
+                break
+        
+        if not city:
+            return "I couldn't determine which city you're asking about. Please specify a city name."
+        
+        # Check if the query specifically mentions "today" or similar terms
+        if prefer_current_weather or "today" in message or "now" in message or "current" in message:
+            result = await get_current_weather(city)
+            return result["formatted_response"]
+        else:
+            result = await get_weather_forecast(city)
+            return result["formatted_response"]
+    except Exception as e:
+        logging.error(f"Error processing webhook: {str(e)}")
+        return f"Sorry, I encountered an error: {str(e)}"
 
 @app.post("/tools/execute")
 async def execute_tool(request: ToolRequest):
@@ -309,6 +342,68 @@ async def get_current_weather(city: str):
             "error": f"Failed to fetch weather data: {str(e)}",
             "formatted_response": f"Sorry, I couldn't get weather data for {city}. Please check the city name and try again."
         }
+
+@app.post("/webhook-test/weather-chat")
+async def webhook_handler(request: WebhookRequest):
+    """Handle incoming webhook requests from the chat UI"""
+    try:
+        message = request.message.lower()
+        
+        # Extract city from the message
+        city = extract_city_from_message(message)
+        if not city:
+            return "I couldn't determine which city you're asking about. Please specify a city name."
+        
+        # Determine if we should show current weather or forecast
+        # Check if the user specifically requested today's weather
+        if request.preferCurrentWeather:
+            logging.info(f"User asked about today's weather for {city}")
+            result = await get_current_weather(city)
+            return result["formatted_response"]
+        else:
+            # Check if the message contains any forecast-related terms
+            forecast_terms = ["forecast", "week", "5 day", "5-day", "days", "tomorrow", "future", "next"]
+            is_forecast_query = any(term in message for term in forecast_terms)
+            
+            if is_forecast_query:
+                logging.info(f"User asked about forecast for {city}")
+                result = await get_weather_forecast(city)
+                return result["formatted_response"]
+            else:
+                # Default to current weather if it's not clearly a forecast request
+                logging.info(f"Defaulting to current weather for {city}")
+                result = await get_current_weather(city)
+                return result["formatted_response"]
+    except Exception as e:
+        logging.error(f"Error processing webhook: {str(e)}")
+        return f"Sorry, I encountered an error: {str(e)}"
+
+def extract_city_from_message(message: str) -> str:
+    """Extract city name from user message"""
+    # List of common weather question patterns
+    patterns = [
+        r"weather (?:in|at|for) ([A-Za-z\s]+)(?:\?|$|\.)",
+        r"(?:in|at) ([A-Za-z\s]+) (?:weather|temperature|forecast)(?:\?|$|\.)",
+        r"(?:will it|is it|how is it|how's) (?:raining|rain|sunny|cloudy|hot|cold|warm) (?:in|at) ([A-Za-z\s]+)(?:\?|$|\.)",
+        r"(?:what's|what is) (?:the weather|it) like (?:in|at) ([A-Za-z\s]+)(?:\?|$|\.)",
+        r"weather (?:of|for) ([A-Za-z\s]+)(?:\?|$|\.)",
+        r"([A-Za-z\s]+) (?:weather|forecast|temperature)(?:\?|$|\.)"
+    ]
+    
+    import re
+    for pattern in patterns:
+        match = re.search(pattern, message)
+        if match:
+            return match.group(1).strip()
+    
+    # Look for city names directly in the message if patterns don't match
+    # This is a simplified approach, for a real solution would need a database of city names
+    words = message.split()
+    for word in words:
+        if word[0].isupper() or word in ["london", "paris", "tokyo", "delhi", "hyderabad", "chennai", "mumbai"]:
+            return word.capitalize()
+    
+    return None
 
 async def get_weather_forecast(city: str):
     """Get 5-day weather forecast"""
