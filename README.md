@@ -7,7 +7,7 @@
 
 **Purpose:**
 An interactive chatbot that answers real-time weather queries for any city in natural language.
-more advanced natural language processing in master branch
+- more advanced natural language processing in master branch
 **Tech Stack:**
 - **Frontend:** Responsive HTML/CSS/JS chatbot UI (local or web)
 - **Backend Integration:** n8n workflow automation platform (Dockerized)
