@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1152,
-        144
+        -544,
+        336
       ],
-      "id": "e8ea5226-6905-4a64-a9bb-4e94253cacac",
+      "id": "ce4dd134-7edd-4537-87f4-a9e238a5af7b",
       "name": "Webhook",
       "webhookId": "89657898-69ab-41e9-97cf-0e5a2e3eb2b6"
     },
@@ -42,14 +42,14 @@
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1,
       "position": [
-        -960,
-        144
+        -352,
+        336
       ],
-      "id": "783de8d4-7620-4387-b341-87c7ada37777",
+      "id": "8bd9ad50-4d87-432a-8d59-bb8fbbb06c56",
       "name": "Message a model",
       "credentials": {
         "googlePalmApi": {
-          "id": "3QfRg4dKCoPCWOHn",
+          "id": "dR4iN6CXaKuYKx46",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
@@ -63,10 +63,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        176,
-        48
+        800,
+        144
       ],
-      "id": "cde18b00-acb1-496d-bbd2-7acc5090426a",
+      "id": "7194a092-b08c-4ed9-b770-c17e81a50887",
       "name": "Respond to Webhook"
     },
     {
@@ -78,10 +78,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -640,
-        144
+        -32,
+        336
       ],
-      "id": "ee6c16f9-e5d8-4b9c-bdff-74a1dc0466f6",
+      "id": "9563ae13-91b3-41c8-ac3b-b3df2a85a216",
       "name": "Edit Fields"
     },
     {
@@ -129,10 +129,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -192,
-        48
+        464,
+        144
       ],
-      "id": "d26dd5f1-247f-4b25-becc-266e425c7339",
+      "id": "3b12286c-56d2-4e86-8ed2-07487623594e",
       "name": "Call MCP Weather"
     },
     {
@@ -154,10 +154,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        0,
-        48
+        624,
+        144
       ],
-      "id": "f3633597-cfbf-4f7f-a1ad-7135754688a6",
+      "id": "1d722991-6b80-4c3b-a57a-026739d120d8",
       "name": "Extract Reply"
     },
     {
@@ -174,7 +174,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $json.city }}, {{ $json.forecast }}",
+                    "leftValue": "={{ $json.city }}",
                     "rightValue": "",
                     "operator": {
                       "type": "string",
@@ -209,6 +209,29 @@
                 ],
                 "combinator": "and"
               }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1fa13311-a822-4379-8411-4403aacc9dfe",
+                    "leftValue": "={{ $json.city }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notExists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
             }
           ]
         },
@@ -217,10 +240,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        -448,
-        144
+        160,
+        320
       ],
-      "id": "8e5bee62-41a4-4f98-a4df-6ad4584ed5db",
+      "id": "07ad02cc-d6e3-479b-b02b-3e3462c694f3",
       "name": "Switch"
     },
     {
@@ -232,11 +255,26 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -176,
-        272
+        448,
+        336
       ],
-      "id": "6dd929f0-8893-4035-b742-f320e5f681f4",
+      "id": "bed03221-a1e9-45e3-a49f-4d3aa6d1b334",
       "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.city }} doesn't exist",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        448,
+        528
+      ],
+      "id": "9ec42a68-44e5-402a-8a6c-fd3102cb35af",
+      "name": "Respond to Webhook2"
     }
   ],
   "connections": {
@@ -310,13 +348,19 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     }
   },
   "pinData": {},
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "fa30a3de9f24f296baca547d332b215e27b6968f92d09824920a5698fb2b8053"
+    "instanceId": "d8ee88041dd2d9cb00f082f14da23124a852757654312f073c3aa5f2bc59fe48"
   }
 }
