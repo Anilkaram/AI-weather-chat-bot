@@ -405,7 +405,7 @@
         const statusDot = document.getElementById('status-dot');
         
         // n8n webhook URL - using n8n for LLM processing
-        const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook-test/weather-chat';
+        const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/weather-chat';
         
         let isProcessing = false;
 
@@ -481,6 +481,15 @@
             updateStatus('Processing...', 'connected');
 
             try {
+                // Display note about n8n
+                if (!document.getElementById('n8n-note')) {
+                    const noteDiv = document.createElement('div');
+                    noteDiv.id = 'n8n-note';
+                    noteDiv.style = 'position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px; z-index: 1000; font-size: 12px;';
+                    noteDiv.innerHTML = '<b>Note:</b> Please activate your workflow in n8n<br>at <a href="http://localhost:5678" target="_blank">http://localhost:5678</a>';
+                    document.body.appendChild(noteDiv);
+                }
+                
                 // Check if the query specifically mentions time-related keywords
                 // If it mentions today-related terms, prioritize current weather
                 const todayKeywords = ['today', 'now', 'current', 'currently', 'right now', 'at the moment'];
@@ -527,7 +536,11 @@
 
             } catch (error) {
                 hideTypingIndicator();
-                addMessage(`Sorry, I encountered an error: ${error.message}`);
+                if (error.message && error.message.includes('404')) {
+                    addMessage(`Sorry, I can't process your request right now. Please activate the workflow in n8n by going to http://localhost:5678, importing the workflow, and activating it using the toggle in the top-right corner.`);
+                } else {
+                    addMessage(`Sorry, I encountered an error: ${error.message}`);
+                }
                 updateStatus('Error occurred', 'disconnected');
                 console.error('Error:', error);
             }
