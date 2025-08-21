@@ -28,10 +28,34 @@ def validate_timezone():
         utc_now = datetime.now(timezone.utc)
         now = datetime.now(tz)
         
-        logging.info(f"Timezone configuration successful: {timezone_name}")
-        logging.info(f"UTC time: {utc_now.strftime('%Y-%m-%d %H:%M:%S UTC')}")
-        logging.info(f"Local time in {timezone_name}: {now.strftime('%Y-%m-%d %H:%M:%S %Z (%z)')}")
-        logging.info(f"Offset from UTC: {now.strftime('%z')}")
+        # Get system timezone
+        system_tz = datetime.now().astimezone().tzinfo.tzname(None)
+        
+        # Format UTC offset for display
+        offset = now.strftime('%z')
+        formatted_offset = f"{offset[:3]}:{offset[3:]}" if len(offset) >= 5 else offset
+        
+        # Print comprehensive timezone info
+        logging.info("=" * 60)
+        logging.info("TIMEZONE CONFIGURATION".center(60))
+        logging.info("=" * 60)
+        logging.info(f"✅ Timezone configuration successful: {timezone_name}")
+        logging.info(f"🖥️ System timezone: {system_tz}")
+        logging.info(f"⚙️ Configured timezone: {tz.zone}")
+        logging.info(f"🌐 UTC time: {utc_now.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        logging.info(f"🕒 Local time: {now.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+        logging.info(f"⏰ Offset from UTC: {formatted_offset}")
+        
+        # Test OpenWeather API timestamp conversion
+        test_timestamp = int(datetime.now(timezone.utc).timestamp())
+        converted = datetime.fromtimestamp(test_timestamp, tz=timezone.utc).astimezone(tz)
+        logging.info("=" * 60)
+        logging.info("TIMESTAMP CONVERSION TEST".center(60))
+        logging.info("=" * 60)
+        logging.info(f"Test UTC timestamp: {test_timestamp}")
+        logging.info(f"Converted to {tz.zone}: {converted.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+        logging.info(f"12-hour format: {converted.strftime('%I:%M %p')}")
+        logging.info("=" * 60)
         
         return timezone_name
         

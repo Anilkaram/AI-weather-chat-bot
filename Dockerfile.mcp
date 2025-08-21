@@ -2,12 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Set timezone
-ENV TZ=Asia/Kolkata
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# Install tzdata for timezone support and other dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-RUN pip install fastapi uvicorn requests python-multipart pytz
+# Set timezone using TZ variable (will be overridden by environment variable in docker-compose)
+ENV TZ=Etc/UTC
+ENV TIMEZONE=Etc/UTC
+
+# Install Python dependencies
+RUN pip install --no-cache-dir fastapi uvicorn requests python-multipart pytz
 
 # Copy source files
 COPY weather_server_http.py server.py timezone_debug.py TIMEZONE_HELP.md ./

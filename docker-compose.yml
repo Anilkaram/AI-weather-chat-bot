@@ -32,8 +32,8 @@ services:
       - "3001:3001"
     environment:
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
-      - TIMEZONE=${TIMEZONE}
-      - TZ=${TIMEZONE}
+      - TIMEZONE=${TIMEZONE:-Asia/Kolkata}
+      - TZ=${TIMEZONE:-Asia/Kolkata}
     volumes:
       - /etc/localtime:/etc/localtime:ro
     networks:

@@ -498,7 +498,17 @@
 
                 const data = await response.text();
                 hideTypingIndicator();
-                addMessage(data);
+                
+                // Check if the response contains timezone information
+                // and highlight it for the user
+                let formattedData = data;
+                if (data.includes("Timezone:")) {
+                    // Add a clear timezone notice at the end of weather data
+                    formattedData = data.replace(/(Timezone: [A-Za-z\/]+ \(UTC[+-]\d{2}:\d{2}\))/, 
+                        "🕒 $1");
+                }
+                
+                addMessage(formattedData);
                 updateStatus('Ready', 'connected');
 
             } catch (error) {
