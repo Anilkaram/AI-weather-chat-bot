@@ -10,6 +10,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    logging.info("✓ Environment variables loaded from .env file")
+except ImportError:
+    logging.warning("python-dotenv not installed. Using system environment variables only.")
+except Exception as e:
+    logging.warning(f"Could not load .env file: {e}")
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -21,54 +31,69 @@ app = FastAPI(title="Weather MCP Server", version="1.0.0")
 # Enable CORS for n8n integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5678", "http://localhost:8080"],  # Restrict origins
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],  # Restrict methods
     allow_headers=["*"],
 )
 
 # Get OpenWeatherMap API key
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
-# Clean up any formatting issues with the API key
-if OPENWEATHER_API_KEY:
-    # Strip any whitespace
-    OPENWEATHER_API_KEY = OPENWEATHER_API_KEY.strip()
-    
-    # Extract just the value if the environment variable name is included
-    if "OPENWEATHER_API_KEY=" in OPENWEATHER_API_KEY:
-        logging.warning("API key contains variable name. Extracting actual key...")
-        OPENWEATHER_API_KEY = OPENWEATHER_API_KEY.split("=", 1)[1] if "=" in OPENWEATHER_API_KEY else OPENWEATHER_API_KEY
-        OPENWEATHER_API_KEY = OPENWEATHER_API_KEY.strip()
-
-if not OPENWEATHER_API_KEY or OPENWEATHER_API_KEY == "your_api_key_here" or OPENWEATHER_API_KEY == "your_actual_api_key_here":
-    logging.error("⚠️ ERROR: No valid OpenWeatherMap API key found in environment variables.")
-    logging.error("Please set a valid API key in the .env file or environment variables.")
+if not OPENWEATHER_API_KEY:
+    logging.error("⚠️ ERROR: No OpenWeatherMap API key found in environment variables.")
+    logging.error("Please set OPENWEATHER_API_KEY in your .env file or environment variables.")
     logging.error("You can get a free API key from https://openweathermap.org/api")
-else:
-    logging.info(f"✓ API Key configured successfully: {OPENWEATHER_API_KEY[:5]}...{OPENWEATHER_API_KEY[-4:] if len(OPENWEATHER_API_KEY) > 8 else ''}")
-    logging.info(f"API Key length: {len(OPENWEATHER_API_KEY)}, No extra spaces: '{OPENWEATHER_API_KEY}'")
+    raise ValueError("Missing OPENWEATHER_API_KEY environment variable")
 
 # Configure timezone from environment variable or default to IST
 timezone_name = os.getenv("TIMEZONE", "Asia/Kolkata").strip()
 LOCAL_TIMEZONE = pytz.timezone(timezone_name)
 
-# Log detailed timezone information for debugging
-now_local = datetime.now(LOCAL_TIMEZONE)
-now_utc = datetime.now(timezone.utc)
-offset = now_local.strftime('%z')
-formatted_offset = f"{offset[:3]}:{offset[3:]}"
+logging.info("✓ API Key configured successfully")
+logging.info(f"✓ Timezone configured: {LOCAL_TIMEZONE.zone}")
 
-logging.info("=" * 50)
-logging.info(f"TIMEZONE CONFIGURATION")
-logging.info("=" * 50)
-logging.info(f"Environment TIMEZONE: {timezone_name}")
-logging.info(f"System timezone: {datetime.now().astimezone().tzinfo.tzname(None)}")
-logging.info(f"Configured timezone: {LOCAL_TIMEZONE.zone}")
-logging.info(f"Current UTC time: {now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}")
-logging.info(f"Current local time: {now_local.strftime('%Y-%m-%d %H:%M:%S %Z')}")
-logging.info(f"UTC offset: {formatted_offset}")
-logging.info("=" * 50)
+def determine_forecast_days(time_param: str) -> int:
+    """Determine number of forecast days based on user's time parameter"""
+    if not time_param:
+        return 5  # default to 5 days if no time specified
+    
+    time_param = time_param.lower().strip()
+    
+    # Tomorrow queries
+    if "tomorrow" in time_param:
+        return 1
+    
+    # Today queries (current weather, but if they ask for forecast today, give 1 day)
+    if "today" in time_param or "now" in time_param:
+        return 1
+    
+    # Next few days
+    if "next 2 days" in time_param or "2 days" in time_param:
+        return 2
+    if "next 3 days" in time_param or "3 days" in time_param:
+        return 3
+    if "next 4 days" in time_param or "4 days" in time_param:
+        return 4
+    
+    # Week-related queries
+    if "week" in time_param or "7 days" in time_param:
+        return 5  # OpenWeatherMap free tier gives 5 days max
+    
+    # Default forecast
+    if "5 days" in time_param or "5-day" in time_param:
+        return 5
+    
+    # Extract number patterns like "next 6 days", "6 day forecast", etc.
+    import re
+    number_match = re.search(r'(\d+)\s*days?', time_param)
+    if number_match:
+        requested_days = int(number_match.group(1))
+        # OpenWeatherMap free tier supports up to 5 days
+        return min(requested_days, 5)
+    
+    # Default to 5 days for general forecast requests
+    return 5
 
 class WeatherRequest(BaseModel):
     city: str
@@ -81,22 +106,6 @@ class WebhookRequest(BaseModel):
     message: str
     timestamp: str
     preferCurrentWeather: bool = False
-
-@app.get("/debug")
-async def debug_info():
-    """Endpoint for debugging API configuration"""
-    return {
-        "api_key_info": {
-            "set": OPENWEATHER_API_KEY is not None,
-            "valid_format": OPENWEATHER_API_KEY and len(OPENWEATHER_API_KEY) > 20,
-            "first_5_chars": OPENWEATHER_API_KEY[:5] if OPENWEATHER_API_KEY else "none",
-            "last_4_chars": OPENWEATHER_API_KEY[-4:] if OPENWEATHER_API_KEY and len(OPENWEATHER_API_KEY) > 4 else "none"
-        },
-        "env_vars": {
-            "OPENWEATHER_API_KEY": os.getenv("OPENWEATHER_API_KEY", "not set"),
-            "TIMEZONE": os.getenv("TIMEZONE", "not set")
-        }
-    }
 
 @app.get("/health")
 async def health_check():
@@ -180,50 +189,23 @@ async def list_tools():
                     },
                     "required": ["city"]
                 }
+            },
+            {
+                "name": "get_tomorrow_forecast",
+                "description": "Get tomorrow's weather forecast for a city",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "city": {
+                            "type": "string",
+                            "description": "The name of the city"
+                        }
+                    },
+                    "required": ["city"]
+                }
             }
         ]
     }
-
-@app.post("/webhook-test/weather-chat")
-async def webhook_handler(request: dict):
-    """Handle incoming webhook requests from the chat UI"""
-    try:
-        message = request.get("message", "").lower()
-        prefer_current_weather = request.get("preferCurrentWeather", False)
-        
-        # Extract city from the message
-        city = None
-        for possible_city in ["hyderabad", "chennai", "mumbai", "delhi", "bangalore", "london", "new york", "paris", "tokyo"]:
-            if possible_city in message:
-                city = possible_city
-                break
-        
-        if not city:
-            return "I couldn't determine which city you're asking about. Please specify a city name."
-        
-        # Check if the query specifically mentions "today" or similar terms
-        today_keywords = ["today", "now", "current", "currently", "right now", "at the moment"]
-        forecast_keywords = ["forecast", "week", "days", "tomorrow", "future", "next", "upcoming", "5-day", "5 day"]
-        
-        # If user explicitly asks for current weather or uses today-related keywords
-        if prefer_current_weather or any(keyword in message for keyword in today_keywords):
-            result = await get_current_weather(city)
-            return result["formatted_response"]
-        # If user explicitly asks for forecast
-        elif any(keyword in message for keyword in forecast_keywords):
-            result = await get_weather_forecast(city)
-            return result["formatted_response"]
-        # For general weather queries like "what's the weather in X" without specific timeframe
-        elif "weather" in message and not any(keyword in message for keyword in forecast_keywords):
-            result = await get_current_weather(city)
-            return result["formatted_response"]
-        # Default to forecast for other queries
-        else:
-            result = await get_weather_forecast(city)
-            return result["formatted_response"]
-    except Exception as e:
-        logging.error(f"Error processing webhook: {str(e)}")
-        return f"Sorry, I encountered an error: {str(e)}"
 
 @app.post("/tools/execute")
 async def execute_tool(request: ToolRequest):
@@ -240,6 +222,13 @@ async def execute_tool(request: ToolRequest):
             logging.error("Missing city parameter")
             raise HTTPException(status_code=400, detail="Missing city parameter")
         
+        # Log detailed parameter analysis
+        time_param = request.parameters.get("time", "")
+        logging.info(f"🔍 DEBUG: tool_name={request.tool_name}")
+        logging.info(f"🔍 DEBUG: city={city}")
+        logging.info(f"🔍 DEBUG: time_param='{time_param}'")
+        logging.info(f"🔍 DEBUG: all_parameters={dict(request.parameters)}")
+        
         # Direct fix for n8n integration
         # This is the most reliable way to fix the issue
         
@@ -255,9 +244,20 @@ async def execute_tool(request: ToolRequest):
             logging.info("Returning current weather")
             return result
         elif request.tool_name == "get_forecast":
-            logging.info(f"Getting forecast for {city}")
-            result = await get_weather_forecast(city)
-            logging.info("Returning forecast")
+            # Extract time parameter to determine number of days
+            time_param = request.parameters.get("time", "").lower()
+            logging.info(f"🔍 FORECAST DEBUG: Raw time_param before processing: '{request.parameters.get('time')}'")
+            logging.info(f"🔍 FORECAST DEBUG: Lowercase time_param: '{time_param}'")
+            days = determine_forecast_days(time_param)
+            logging.info(f"🔍 FORECAST DEBUG: determine_forecast_days('{time_param}') returned: {days}")
+            logging.info(f"Getting {days}-day forecast for {city} based on time: '{time_param}'")
+            result = await get_weather_forecast(city, days=days)
+            logging.info(f"Returning {days}-day forecast")
+            return result
+        elif request.tool_name == "get_tomorrow_forecast":
+            logging.info(f"Getting tomorrow's forecast for {city}")
+            result = await get_weather_forecast(city, days=1)
+            logging.info("Returning tomorrow's forecast")
             return result
         else:
             logging.warning(f"Unknown tool requested: {request.tool_name}")
@@ -269,60 +269,24 @@ async def execute_tool(request: ToolRequest):
 async def get_current_weather(city: str):
     """Get current weather from OpenWeatherMap API"""
     try:
-        # Log detailed API request information
-        logging.info(f"Weather API request for city: '{city}'")
-        
-        # Clean API key - HARD CODED SOLUTION TO FIX THE ENVIRONMENT VARIABLE ISSUE
-        # Use the known working API key directly if environment variable issues persist
-        api_key = OPENWEATHER_API_KEY
-        if not api_key or len(api_key.strip()) < 20:
-            logging.warning("Using hardcoded API key as fallback")
-            api_key = "7d5a7721a05e40f05897a8da9a3f05cd"  # Directly using key from .env
-        
-        # Ensure no trailing/leading whitespace
-        api_key = api_key.strip()
-            
-        logging.info(f"Using API key: {api_key[:5]}...{api_key[-4:] if api_key and len(api_key) > 8 else 'invalid'}")
-        logging.info(f"API key length: {len(api_key)}, No whitespace: '{api_key}'")
+        logging.info(f"Getting current weather for city: '{city}'")
         
         url = f"http://api.openweathermap.org/data/2.5/weather"
         params = {
             "q": city,
-            "appid": api_key,
+            "appid": OPENWEATHER_API_KEY,
             "units": "metric"
         }
         
-        # Log full request details
-        logging.info(f"Making API request to: {url}")
-        logging.info(f"Request params: {params}")
-        
         response = requests.get(url, params=params)
-        logging.info(f"Response status code: {response.status_code}")
-        
-        # Log detailed error information if request fails
-        if response.status_code != 200:
-            logging.error(f"API Error: Status code {response.status_code}")
-            try:
-                error_data = response.json()
-                logging.error(f"Error details: {error_data}")
-            except:
-                logging.error(f"Raw error response: {response.text}")
-        
         response.raise_for_status()
         data = response.json()
         
-        # Convert OpenWeather timestamp (Unix timestamp in seconds, UTC) to local timezone
+        # Convert OpenWeather timestamp to local timezone
         local_time = datetime.fromtimestamp(data['dt'], tz=timezone.utc).astimezone(LOCAL_TIMEZONE)
-        
-        # Log the conversion for debugging
-        logging.info(f"Weather data timestamp conversion:")
-        logging.info(f"  Original UTC timestamp: {data['dt']}")
-        logging.info(f"  Converted to {LOCAL_TIMEZONE.zone}: {local_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
         
         # Get the timezone difference for display
         utc_offset = local_time.strftime('%z')  # Format: +HHMM or -HHMM
-        
-        # Format: Insert a colon between hours and minutes in timezone offset
         formatted_offset = f"{utc_offset[:3]}:{utc_offset[3:]}"
         
         weather_info = {
@@ -372,7 +336,7 @@ async def get_current_weather(city: str):
             "formatted_response": f"Sorry, I couldn't get weather data for {city}. Please check the city name and try again."
         }
 
-@app.post("/webhook-test/weather-chat")
+@app.post("/webhook/weather-chat")
 async def webhook_handler(request: WebhookRequest):
     """Handle incoming webhook requests from the chat UI"""
     try:
@@ -434,25 +398,20 @@ def extract_city_from_message(message: str) -> str:
     
     return None
 
-async def get_weather_forecast(city: str):
-    """Get 5-day weather forecast"""
+async def get_weather_forecast(city: str, days: int = 5):
+    """Get weather forecast for specified number of days (1-5 days)"""
     try:
-        # Clean API key - HARD CODED SOLUTION TO FIX THE ENVIRONMENT VARIABLE ISSUE
-        # Use the known working API key directly if environment variable issues persist
-        api_key = OPENWEATHER_API_KEY
-        if not api_key or len(api_key.strip()) < 20:
-            logging.warning("Using hardcoded API key as fallback")
-            api_key = "7d5a7721a05e40f05897a8da9a3f05cd"  # Directly using key from .env
-        
-        # Ensure no trailing/leading whitespace
-        api_key = api_key.strip()
-        logging.info(f"Forecast using API key: {api_key[:5]}...{api_key[-4:] if api_key and len(api_key) > 8 else 'invalid'}")
-        logging.info(f"API key length: {len(api_key)}")
+        if days == 1:
+            logging.info(f"Getting tomorrow's forecast for city: '{city}'")
+            forecast_title = f"📅 Tomorrow's Weather Forecast for"
+        else:
+            logging.info(f"Getting {days}-day forecast for city: '{city}'")
+            forecast_title = f"📅 {days}-Day Weather Forecast for"
         
         url = f"http://api.openweathermap.org/data/2.5/forecast"
         params = {
             "q": city,
-            "appid": api_key,
+            "appid": OPENWEATHER_API_KEY,
             "units": "metric"
         }
         
@@ -460,30 +419,33 @@ async def get_weather_forecast(city: str):
         response.raise_for_status()
         data = response.json()
         
-        # Log timezone information for debugging
-        logging.info(f"Forecast data received for {city}. Converting from UTC to {LOCAL_TIMEZONE.zone}")
-        
         # Get the timezone name and offset for display (only once)
         utc_offset = datetime.now(LOCAL_TIMEZONE).strftime('%z')  # Format: +HHMM or -HHMM
         formatted_offset = f"{utc_offset[:3]}:{utc_offset[3:]}"
         timezone_info = f" (Times in {LOCAL_TIMEZONE.zone}, UTC{formatted_offset})"
         
-        forecast_text = f"📅 5-Day Weather Forecast for {data['city']['name']}, {data['city']['country']}:\n\n"
+        forecast_text = f"{forecast_title} {data['city']['name']}, {data['city']['country']}:\n\n"
         
         # Group by date and take one forecast per day
         daily_forecasts = {}
+        current_date = datetime.now(LOCAL_TIMEZONE).strftime('%Y-%m-%d')
+        
         for item in data['list']:
             # Convert timestamp to local timezone - OpenWeather API uses Unix timestamps in UTC
             dt = datetime.fromtimestamp(item['dt'], tz=timezone.utc).astimezone(LOCAL_TIMEZONE)
             date = dt.strftime('%Y-%m-%d')
+            
+            # For 1-day forecast (tomorrow), skip today's data
+            if days == 1 and date == current_date:
+                continue
             
             # Only store one forecast per day (the first one we encounter)
             if date not in daily_forecasts:
                 daily_forecasts[date] = item
                 logging.info(f"Adding forecast for {date}, local time: {dt.strftime('%H:%M:%S')}")
                 
-                # Stop after we have 5 days
-                if len(daily_forecasts) >= 5:
+                # Stop after we have the requested number of days
+                if len(daily_forecasts) >= days:
                     break
         
         # Format the forecast text in a nicer format

@@ -96,11 +96,7 @@
               "value": "={{ $json.city }}"
             },
             {
-              "name": "=weather",
-              "value": "={{ $json.weather }}"
-            },
-            {
-              "name": "=parameters.time",
+              "name": "parameters.time",
               "value": "={{ $json.time }}"
             },
             {
@@ -108,11 +104,15 @@
               "value": "={{ $json.forecast ? 'get_forecast' : 'get_weather' }}"
             },
             {
-              "name": "greeting",
+              "name": "parameters.weather",
+              "value": "={{ $json.weather }}"
+            },
+            {
+              "name": "parameters.greeting",
               "value": "={{ $json.greeting }}"
             },
             {
-              "name": "forecast",
+              "name": "parameters.forecast",
               "value": "={{ $json.forecast }}"
             }
           ]
