@@ -232,17 +232,33 @@ async def execute_tool(request: ToolRequest):
         # Log the request with timezone information
         now = datetime.now(LOCAL_TIMEZONE)
         logging.info(f"Received tool request: {request.tool_name} at {now.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+        logging.info(f"Request parameters: {request.parameters}")
         
+        # Extract city
+        city = request.parameters.get("city")
+        if not city:
+            logging.error("Missing city parameter")
+            raise HTTPException(status_code=400, detail="Missing city parameter")
+        
+        # Direct fix for n8n integration
+        # This is the most reliable way to fix the issue
+        
+        # Log the request parameters for debugging
+        logging.info(f"Request tool_name: {request.tool_name}")
+        logging.info(f"Request parameters: {request.parameters}")
+        
+        # For n8n integration, use the tool_name that's sent
+        # The n8n workflow has been updated to send the correct tool based on the query
         if request.tool_name == "get_weather":
-            city = request.parameters["city"]
-            logging.info(f"Getting weather for {city}")
+            logging.info(f"Getting current weather for {city}")
             result = await get_current_weather(city)
-            logging.info(f"Weather data retrieved successfully for {city}")
+            logging.info("Returning current weather")
             return result
         elif request.tool_name == "get_forecast":
-            city = request.parameters["city"]
             logging.info(f"Getting forecast for {city}")
-            return await get_weather_forecast(city)
+            result = await get_weather_forecast(city)
+            logging.info("Returning forecast")
+            return result
         else:
             logging.warning(f"Unknown tool requested: {request.tool_name}")
             raise HTTPException(status_code=400, detail=f"Unknown tool: {request.tool_name}")
