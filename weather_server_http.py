@@ -10,20 +10,30 @@ from typing import Dict, Any
 
 app = FastAPI(title="Weather MCP Server", version="1.0.0")
 
-# Enable CORS for n8n integration
+# Enable CORS for trusted frontend only (adjust domain as needed)
+TRUSTED_ORIGINS = ["http://localhost:8080"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=TRUSTED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Get OpenWeatherMap API key
-OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "your_api_key_here")
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
+if not OPENWEATHER_API_KEY:
+    raise RuntimeError("OPENWEATHER_API_KEY environment variable is required.")
 
 class WeatherRequest(BaseModel):
     city: str
+
+def validate_city(city: str) -> str:
+    # Basic validation: only allow letters, spaces, and hyphens
+    import re
+    if not re.match(r'^[A-Za-z\s\-]{2,50}$', city):
+        raise HTTPException(status_code=400, detail="Invalid city name.")
+    return city.strip()
 
 class ToolRequest(BaseModel):
     tool_name: str
@@ -84,18 +94,17 @@ async def execute_tool(request: ToolRequest):
 
 async def get_current_weather(city: str):
     """Get current weather from OpenWeatherMap API"""
+    city = validate_city(city)
     try:
-        url = f"http://api.openweathermap.org/data/2.5/weather"
+        url = f"https://api.openweathermap.org/data/2.5/weather"
         params = {
             "q": city,
             "appid": OPENWEATHER_API_KEY,
             "units": "metric"
         }
-        
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
-        
         weather_info = {
             "city": data["name"],
             "country": data["sys"]["country"],
@@ -107,7 +116,6 @@ async def get_current_weather(city: str):
             "wind_speed": f"{data['wind']['speed']} m/s",
             "timestamp": datetime.now().isoformat()
         }
-        
         return {
             "success": True,
             "data": weather_info,
@@ -121,52 +129,46 @@ async def get_current_weather(city: str):
 
 Data updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"""
         }
-        
-    except requests.RequestException as e:
+    except requests.RequestException:
         return {
             "success": False,
-            "error": f"Failed to fetch weather data: {str(e)}",
+            "error": "Failed to fetch weather data.",
             "formatted_response": f"Sorry, I couldn't get weather data for {city}. Please check the city name and try again."
         }
 
 async def get_weather_forecast(city: str):
     """Get 5-day weather forecast"""
+    city = validate_city(city)
     try:
-        url = f"http://api.openweathermap.org/data/2.5/forecast"
+        url = f"https://api.openweathermap.org/data/2.5/forecast"
         params = {
             "q": city,
             "appid": OPENWEATHER_API_KEY,
             "units": "metric"
         }
-        
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
-        
         forecast_text = f"📅 5-Day Weather Forecast for {data['city']['name']}, {data['city']['country']}:\n\n"
-        
         # Group by date and take one forecast per day
         daily_forecasts = {}
         for item in data['list'][:5]:  # First 5 entries
             date = datetime.fromtimestamp(item['dt']).strftime('%Y-%m-%d')
             if date not in daily_forecasts:
                 daily_forecasts[date] = item
-        
         for date, forecast in daily_forecasts.items():
             day_name = datetime.fromtimestamp(forecast['dt']).strftime('%A')
             temp = forecast['main']['temp']
             desc = forecast['weather'][0]['description'].title()
             forecast_text += f"🗓️ {day_name} ({date}): {temp}°C, {desc}\n"
-        
         return {
             "success": True,
             "formatted_response": forecast_text
         }
-        
-    except requests.RequestException as e:
+    except requests.RequestException:
         return {
             "success": False,
-            "error": f"Failed to fetch forecast data: {str(e)}",
+            "error": "Failed to fetch forecast data.",
             "formatted_response": f"Sorry, I couldn't get forecast data for {city}."
         }
 
