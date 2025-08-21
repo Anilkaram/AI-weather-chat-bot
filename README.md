@@ -5,8 +5,6 @@
 # N8N workflow 
 <img width="1919" height="1030" alt="Screenshot 2025-08-21 171131" src="https://github.com/user-attachments/assets/8d676d60-c705-4a68-967f-dc3950fd14cb" />
 
-
-
 **Purpose:**
 An interactive chatbot that answers real-time weather queries for any city in natural language.
 
