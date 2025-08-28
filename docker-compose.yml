@@ -44,17 +44,62 @@ services:
     image: nginx:alpine
     container_name: weather-frontend
     ports:
-      - "8080:80"
+      - "1111:80"
     volumes:
-      - ./frontend:/usr/share/nginx/html
+      - .\frontend:/usr/share/nginx/html
     depends_on:
       - n8n
     networks:
       - weather-network
 
+  # prometheus:
+  #   image: prom/prometheus
+  #   volumes:
+  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus_data:/prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   networks:
+  #     - weather-network
+  #     - monitoring 
+  #   depends_on:
+  #     - mcp-server
+
+  # grafana:
+  #   image: grafana/grafana
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - monitoring
+  #     - weather-network
+
+  # cadvisor:
+  #   image: google/cadvisor:latest
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - //var/run/docker.sock:/var/run/docker.sock:ro
+  #     - //sys:/sys:ro
+  #     - //var/lib/docker:/var/lib/docker:ro
+  #   networks:
+  #     - monitoring
+  #     - weather-network
+  #   depends_on:
+  #     - grafana
+    
 volumes:
   n8n_data:
+  # prometheus_data:
+  # grafana_data:
+  localtime:
+    external: true
 
 networks:
   weather-network:
     driver: bridge
+  # monitoring:
+  #   driver: bridge

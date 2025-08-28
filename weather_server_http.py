@@ -56,8 +56,8 @@ logging.info(f"✓ Timezone configured: {LOCAL_TIMEZONE.zone}")
 def determine_forecast_days(time_param: str) -> int:
     """Determine number of forecast days based on user's time parameter"""
     if not time_param:
-        return 5  # default to 5 days if no time specified
-    
+        return 1  # default to 1 day if no time specified
+
     time_param = time_param.lower().strip()
     
     # Tomorrow queries
